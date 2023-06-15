@@ -5,8 +5,12 @@ fn simple_callback() {
     println!("simple_callback() called");
 }
 
-fn run_simple_callback(cb: fn()) {
+fn run_a_callback(cb: fn()) {
     cb();
+}
+
+fn pass_one_to_callback(cb: fn(i: i32)) {
+    cb(1);
 }
 
 // we can return fn type
@@ -26,19 +30,24 @@ fn run_closure2(cl: impl Fn()) {
 
 fn main() {
     let my_simple_callback = simple_callback;
-    run_simple_callback(my_simple_callback);
-    run_simple_callback(simple_callback);
+    run_a_callback(my_simple_callback);
+    run_a_callback(simple_callback);
     // return fn() and execute it:
     return_simple_callback()();
-    // closure is coerced to fn type if it doesn't capture any variables:
-    run_simple_callback(|| println!("closure is coerced to fn!"));
+    // FYI, this does nothing:
     return_simple_callback();
-    // This won't work because closure cannot be coerced due to capturing variable s
+    // closure is coerced to fn type if it doesn't capture any variables:
+    run_a_callback(|| println!("closure is coerced to fn!"));
+    // This won't work because closure cannot be coerced to fn() due to capturing variable s
     //let s: String = "test string".into();
     //run_simple_callback(|| println!("anonymous callback also works {}", s));
-    //
-    run_closure(|| println!("very simple closure"));
-    run_closure2(|| println!("very simple closure"));
+    // this won't work because it expects fn()
+    // run_a_callback(|i| println!("closure is coerced to fn(i), i={}!", i));
+    // this works because it expects fn(i: i32)
+    pass_one_to_callback(|i| println!("closure is coerced to fn(i), i={}!", i));
+
+    run_closure(|| println!("a very simple closure"));
+    run_closure2(|| println!("a very simple closure"));
     let s: String = "test string".into();
     run_closure(|| println!("anonymous callback with captured String: {}", s));
     // This won't work for Fn() closure because the captured variable is mutable:
