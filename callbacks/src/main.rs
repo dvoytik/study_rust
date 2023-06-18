@@ -47,6 +47,36 @@ fn run_mut_closure(mut cl: impl FnMut()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+// Collecting multiple callbacks won't work with generic Fn() due to the following error:
+// no two closures, even if identical, have the same type
+// consider boxing your closure and/or using it as a trait object [E0308]
+struct CallbacksCollectorGeneric<CB: Fn()> {
+    callbacks: Vec<CB>,
+}
+
+impl<CB> CallbacksCollectorGeneric<CB>
+where
+    CB: Fn(),
+{
+    pub fn add_callback(&mut self, cb: CB) {
+        self.callbacks.push(cb);
+    }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+struct CallbacksCollector {
+    // Vec<dyn Fn()> doesn't work due to error:
+    // rustc: the size for values of type `(dyn Fn() + 'static)` cannot be known at compilation time│
+    // the trait `Sized` is not implemented for `(dyn Fn() + 'static)` [E0277]
+    //callbacks: Vec<dyn Fn()>,
+    callbacks: Vec<Box<dyn Fn()>>,
+}
+impl CallbacksCollector {
+    pub fn add_callback(&mut self, cb: Box<dyn Fn()>) {
+        self.callbacks.push(cb);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 fn main() {
     let my_simple_callback = simple_callback;
     run_a_callback(my_simple_callback);
@@ -91,4 +121,19 @@ fn main() {
         s_mut.push('!');
         println!("anonymous callback with captured mut String: {}", s_mut)
     });
+
+    let mut cb_collector = CallbacksCollectorGeneric {
+        callbacks: Vec::new(),
+    };
+    cb_collector.add_callback(|| println!("first callback in collector"));
+    // Adding the second callback won't work due to error:
+    // no two closures, even if identical, have the same type
+    // consider boxing your closure and/or using it as a trait object [E0308]
+    // cb_collector.add_callback(|| println!("second callback in collector"));
+
+    let mut cb_collector = CallbacksCollector {
+        callbacks: Vec::new(),
+    };
+    cb_collector.add_callback(Box::new(|| println!("first callback in collector")));
+    cb_collector.add_callback(Box::new(|| println!("second callback in collector")));
 }
