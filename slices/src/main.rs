@@ -34,9 +34,18 @@ fn main() {
     let slice_u8 = &array_u8[..]; // type &[u8]
     println!("slice: {:?}", slice_u8);
 
-    let slice = &[0..];
-    println!("slice: {:?}", *slice);
+    // WARNING: This is not a slice but an array of one element of type RangeFrom<i32>
+    let _slice = [0..];
+    let slice = &[0..]; // same as &_slice
+    println!("slice: {:?}", slice);
 
     // TODO: RangeFrom
     // assert_eq!((2..), std::ops::RangeFrom { start: 2 });
+    let arr = [0, 1, 2, 3, 4];
+    assert_eq!(arr[..], [0, 1, 2, 3, 4]);
+    assert_eq!(arr[..3], [0, 1, 2]);
+    assert_eq!(arr[..=3], [0, 1, 2, 3]);
+    assert_eq!(arr[1..], [1, 2, 3, 4]); // This is a `RangeFrom`
+    assert_eq!(arr[1..3], [1, 2]);
+    assert_eq!(arr[1..=3], [1, 2, 3]);
 }
