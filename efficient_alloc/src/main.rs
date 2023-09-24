@@ -1,9 +1,12 @@
 use std::mem::MaybeUninit;
 
 // run strace:
-// strace -o strace.log -s999 -v target/release/effecient_alloc
-// search for anonymous allocation:
-// grep MAP_ANO strace.log
+//   strace -o strace.log -s999 -v target/release/effecient_alloc
+//   search for anonymous allocation:
+//   grep MAP_ANO strace.log
+//
+// run ltrace:
+//   ltrace -x '*' target/release/effecient_alloc &> ltrace.txt
 
 /* No allocation, seems stack is used
 mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f4c91faa000
@@ -35,8 +38,14 @@ fn vec_1mb() {
 
 // Should use __rust_alloc_zeroed() which will overcommit memory
 // strace shows one anonymous allocation of ~ 1 MiB:
-// 61:mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f3fbfa8d000
+//   mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f3fbfa8d000
+// ltrace shows:
+//   __rust_alloc_zeroed(0x100000, 1, 1, 0x55baa109cb30 <unfinished ...>
+//   __rdl_alloc_zeroed(0x100000, 1, 1, 0x55baa109cb30 <unfinished ...>
+//   calloc@libc.so.6(1048576, 1 <unfinished ...>
+//   mmap@libc.so.6(0, 0x101000, 3, 34)               = 0x7f15bb74d000
 fn vec_macro() {
+    // allocating a zero vector with the vec![] macro will use  __rust_alloc_zeroed()
     let mut one_mb_vec: Vec<u8> = vec![0; 1024 * 1024];
 
     one_mb_vec[1024 * 512] = 0x55;
