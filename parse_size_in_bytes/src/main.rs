@@ -1,7 +1,6 @@
 use nom::{
     branch::alt,
-    bytes::complete::{tag_no_case, take_while},
-    character::complete::char,
+    bytes::complete::tag_no_case,
     character::complete::{alpha0, digit1},
     sequence::tuple,
     IResult,
@@ -12,6 +11,7 @@ use nom::{
 #[allow(dead_code)]
 /// Parses strings like "100MB" and returns size in bytes
 fn parse_size_with_suffix(input: &str) -> Option<u64> {
+    // Converts "KiB", "MB" to 1024, 1024*1024, etc.
     fn suffix_to_multiplier(input: &str) -> Option<u64> {
         let suffix_is_mb: IResult<&str, &str> = alt((
             tag_no_case("kib"),
@@ -25,17 +25,16 @@ fn parse_size_with_suffix(input: &str) -> Option<u64> {
             tag_no_case("g"),
         ))(input);
         if let Ok((remainder, sfx)) = suffix_is_mb {
-            // println!("DBG: {remainder}, suffix: {_suffix}");
             if !remainder.is_empty() {
                 return None;
             }
-            let multi = match sfx.chars().next().unwrap() {
+            let multiplier = match sfx.chars().next().unwrap() {
                 'k' | 'K' => 1024,
                 'm' | 'M' => 1024 * 1024,
                 'g' | 'G' => 1024 * 1024 * 1024,
                 _ => return None,
             };
-            return Some(multi);
+            return Some(multiplier);
         }
         None
     }
@@ -51,7 +50,9 @@ fn parse_size_with_suffix(input: &str) -> Option<u64> {
         if suffix_alpha.is_empty() {
             return Some(number);
         } else {
-            return suffix_to_multiplier(suffix_alpha).map(|v| v * number);
+            if let Some(multiplier) = suffix_to_multiplier(suffix_alpha) {
+                return number.checked_mul(multiplier);
+            }
         }
     }
     None
@@ -84,6 +85,10 @@ fn test_parse_size_in_bytes() {
     assert!(parse_size_with_suffix("1Megs").is_none());
     assert!(parse_size_with_suffix("1gi").is_none());
     assert!(parse_size_with_suffix("MiB1").is_none());
-
+    assert!(parse_size_with_suffix(".1M").is_none());
+    assert!(parse_size_with_suffix("0.001M").is_none());
     assert_ne!(parse_size_with_suffix("1mb"), Some(1024 * 1025));
+
+    // Overflow is handled
+    assert!(parse_size_with_suffix("100000000000000GB").is_none())
 }
