@@ -2,7 +2,9 @@ use std::mem::MaybeUninit;
 
 // run strace:
 //   strace -o strace.log -s999 -v target/release/effecient_alloc
-//   search for anonymous allocation:
+// only memory syscalls:
+//   strace -e %memory -o strace.log -s999 -v target/release/effecient_alloc
+// search for anonymous allocation:
 //   grep MAP_ANO strace.log
 //
 // run ltrace:
@@ -55,7 +57,7 @@ fn vec_macro() {
 }
 
 fn main() {
-    // maybe_uninit_1mb();
+    maybe_uninit_1mb();
     // vec_1mb();
-    vec_macro()
+    // vec_macro()
 }
