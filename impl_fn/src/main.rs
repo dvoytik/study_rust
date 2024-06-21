@@ -1,13 +1,12 @@
+// An enum varian with parentheses can create fn() -> EnumType
 #[derive(Debug)]
 enum E1 {
     V1(),
 }
 
-fn f1(_f: impl Fn() -> E1) {}
-
 fn main() {
-    let _c = f1(E1::V1);
-
-    let b: Box<dyn Fn() -> E1> = Box::new(E1::V1);
+    let a = E1::V1(); // type: E1
+    let b = E1::V1; // type: 'extern "rust-call" V1() -> E1' which 'impl Fn() -> E1'
     println!("r = {:?}", b());
+    println!("r = {:?}", a);
 }
