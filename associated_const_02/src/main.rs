@@ -8,12 +8,12 @@ trait FibConst {
 
 fn fib<T>(n: T) -> T
 where
-    T: FibConst + Sub<Output = T> + Add<Output = T> + Eq + Clone,
+    T: FibConst + Sub<Output = T> + Add<Output = T> + Eq + Copy,
 {
     match n {
         n if n == T::ZERO => T::ZERO,
         n if n == T::ONE => T::ONE,
-        n => fib::<T>(n.clone() - T::ONE) + fib::<T>(n - T::TWO),
+        n => fib::<T>(n - T::ONE) + fib::<T>(n - T::TWO),
     }
 }
 
